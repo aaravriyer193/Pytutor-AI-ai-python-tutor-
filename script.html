@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PyTutor · AI Python Learning </title>
+  <meta name="description" content="PyTutor — AI‑powered Python lessons, timeline, chat tutor, quizzes, and an in‑browser Python emulator. Single‑file, front‑end only." />
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      /* White + Blue + Orange theme */
+      --bg:#f7fafc;
+      --panel:#ffffff;
+      --text:#0b1220;
+      --muted:#4a5a70;
+      --brand:#ff7a1a;        /* orange */
+      --brand-2:#ff9c4d;       /* light orange */
+      --accent:#1e5eff;        /* blue */
+      --accent-2:#4c7bff;
+      --danger:#e04f54;
+      --ok:#19a974;
+      --border:#e7edf7;
+      --shadow:0 22px 44px -18px rgba(13,40,90,.14);
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{ margin:0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial; color:var(--text); background: var(--bg); letter-spacing:.2px; }
+
+    header{ position:sticky; top:0; z-index:40; backdrop-filter: saturate(120%) blur(8px); background:linear-gradient(180deg, rgba(255,255,255,.94), rgba(255,255,255,.82)); border-bottom:1px solid var(--border); }
+    .wrap{max-width:1280px; margin-inline:auto; padding:16px 20px}
+    .row{display:flex; align-items:center; gap:14px; flex-wrap:wrap}
+    .brand{display:flex; align-items:center; gap:10px; text-decoration:none; color:var(--text)}
+    .title{font-weight:800; letter-spacing:.3px; font-family: Sora, Inter, sans-serif}
+    .pill{padding:8px 12px; border:1px solid var(--border); border-radius:999px; color:var(--muted); background:#ffffff; display:inline-flex; gap:8px; align-items:center}
+    .header-actions{margin-left:auto; display:flex; gap:8px; flex-wrap:wrap}
+    .btn{border:none; padding:10px 14px; border-radius:12px; font-weight:700; cursor:pointer; color:#ffffff; background:linear-gradient(90deg,var(--brand), var(--accent)); box-shadow: var(--shadow)}
+    .btn.ghost{background:#ffffff; color:var(--text); border:1px solid var(--border)}
+
+    /* Layout: bring Chat + Emulator to the left column above the timeline on small screens via order */
+    .layout{display:grid; grid-template-columns: 1fr 320px; gap:16px; padding:16px}
+    @media (max-width: 980px){ .layout{grid-template-columns: 1fr} .right{order:2} .main{order:1} }
+
+    .panel{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); box-shadow: var(--shadow)}
+
+    /* Left: main workspace */
+    .main{display:grid; grid-template-rows: auto auto 1fr auto auto auto;}
+    .lesson-bar{display:flex; align-items:center; gap:10px; padding:14px 16px; border-bottom:1px solid var(--border)}
+    .lesson-bar .badge{border:1px solid var(--border); background:#ffffff; color:#0b2f6b; padding:6px 10px; border-radius:999px; font-size:.85rem}
+
+    /* Concept Guide (markdown rendered) */
+    .guide{padding:16px; border-bottom:1px solid var(--border)}
+    .md h2,.md h3{font-family:Sora, Inter, sans-serif; margin:8px 0}
+    .md p{margin:8px 0; color:var(--text)}
+    .md ul{margin:8px 0 8px 20px; color:var(--text)}
+    .md code{font-family:"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New"; background:#f5f8ff; border:1px solid var(--border); padding:2px 6px; border-radius:6px}
+    .md pre{background:#f5f8ff; border:1px solid var(--border); border-radius:12px; padding:12px; overflow:auto}
+
+    .chat{padding:16px; overflow:auto; max-height:44vh}
+    .msg{display:flex; gap:10px; margin:10px 0}
+    .bubble{max-width:75%; padding:12px 14px; border-radius:14px; border:1px solid var(--border); line-height:1.55}
+    .bot .bubble{background:#f7faff}
+    .user{justify-content:flex-end}
+    .user .bubble{background:#fff7f0; color:#0b1220; border-color:#ffe1cc}
+
+    .quick{display:flex; gap:8px; padding:10px 16px; flex-wrap:wrap; border-top:1px solid var(--border)}
+    .chip{border:1px dashed #dfe8ff; background:#ffffff; color:#102a5c; padding:8px 12px; border-radius:10px; cursor:pointer}
+
+    .composer{display:grid; grid-template-columns: 1fr auto; gap:10px; padding:12px 16px; border-top:1px solid var(--border)}
+    .composer input{background:#ffffff; color:var(--text); border:1px solid var(--border); border-radius:12px; padding:14px 16px; font-size:1rem}
+
+    /* Emulator */
+    .emu{margin:16px; display:grid; grid-template-rows:auto auto 1fr auto; gap:8px}
+    .emu h3{margin:0 0 6px; font-family:Sora, Inter, sans-serif; color:#0b2f6b}
+    .emu textarea{width:100%; min-height:170px; background:#ffffff; color:#0b1f17; border:1px solid var(--border); border-radius:12px; padding:12px; resize:vertical}
+    .emu .toolbar{display:flex; gap:8px; flex-wrap:wrap}
+    .emu pre{background:#f5f8ff; color:#0b1f17; border:1px solid var(--border); border-radius:12px; padding:12px; height:170px; overflow:auto; white-space:pre-wrap}
+
+    /* Right: Timeline */
+    .right{padding:14px}
+    .right h3{margin:4px 6px 10px; font-size:1rem; color:var(--muted)}
+    .group{margin:8px 0 12px}
+    .group h4{margin:8px 6px; color:#0b2f6b; font-size:.95rem; font-family:Sora, Inter, sans-serif}
+    .lesson{display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:14px; cursor:pointer; border:1px solid var(--border)}
+    .lesson:hover{background:#f5f8ff}
+    .lesson.active{background:#eaf1ff; border-color:#cfe0ff}
+    .dot{width:8px; height:8px; border-radius:50%; background:#d3dff6}
+    .dot.done{background:linear-gradient(90deg,var(--accent),var(--brand))}
+    .lesson .t{flex:1}
+    .lesson .b{font-size:.8rem; color:var(--muted)}
+
+    /* Details under chat */
+    .details-grid{display:grid; grid-template-columns: 1fr 1fr; gap:12px; padding:12px 16px}
+    @media (max-width:960px){ .details-grid{grid-template-columns:1fr} }
+    .section{padding:12px; border:1px solid var(--border); border-radius:14px}
+    .section h4{margin:0 0 8px; color:#0b2f6b; font-family:Sora, Inter, sans-serif}
+    .code{position:relative; background:#f5f8ff; border:1px solid var(--border); border-radius:12px; padding:12px; font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace; color:#0b1f17; overflow:auto}
+    .copy{position:absolute; top:8px; right:8px; border:1px solid var(--border); background:#ffffff; color:#0b1f17; border-radius:8px; padding:6px 8px; cursor:pointer}
+
+    /* Toast */
+    .toast{position:fixed; bottom:20px; right:20px; background:#0b2f6b; color:#eef4ff; border:1px solid #0a2a60; padding:12px 14px; border-radius:12px; box-shadow: var(--shadow); opacity:0; transform: translateY(10px); transition:.2s; z-index:999}
+    .toast.show{opacity:1; transform:translateY(0)}
+
+    .celebrate{position:fixed; inset:0; pointer-events:none}
+
+    /* Landing Page */
+    .landing{position:fixed; inset:0; z-index:60; display:block; overflow:auto; background:linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,255,255,.90));}
+    .hero{max-width:1100px; margin:40px auto 10px; padding:0 20px}
+    .hero .card{padding:40px; border:1px solid var(--border); border-radius:24px; background:#ffffff; box-shadow: var(--shadow)}
+    .hero h1{margin:0 0 12px; font-size:clamp(32px,4vw,52px); font-family:Sora, Inter, sans-serif}
+    .hero p{color:var(--muted); font-size:1.1rem}
+    .cta{display:flex; gap:12px; flex-wrap:wrap; margin-top:16px}
+    .grid{max-width:1100px; margin:18px auto; padding:0 20px; display:grid; grid-template-columns: repeat(3, 1fr); gap:14px}
+    @media (max-width:980px){ .grid{grid-template-columns:1fr} }
+    .card{border:1px solid var(--border); border-radius:18px; padding:16px; background:#ffffff}
+    .steps{max-width:1100px; margin:12px auto 24px; padding:0 20px; display:grid; grid-template-columns: repeat(3, 1fr); gap:14px}
+    @media (max-width:980px){ .steps{grid-template-columns:1fr} }
+    .mutet{color:var(--muted)}
+    .faq{max-width:1000px; margin:10px auto 40px; padding:0 20px}
+    .q{border:1px solid var(--border); border-radius:14px; padding:14px; background:#ffffff; margin:10px 0}
+  </style>
+  <!-- Pyodide (Python in the browser) -->
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
+</head>
+<body>
+  <header>
+    <div class="wrap row">
+      <a class="brand" href="#"><span class="title">PyTutor</span></a>
+      <span class="pill">Python • Lessons • AI Tutor • Emulator</span>
+      <div class="header-actions">
+        <button class="btn ghost" id="resetProgress">Reset Progress</button>
+        <button class="btn ghost" id="exportProgress">Export Progress</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Landing Page (intro about PyTutor) -->
+  <section class="landing" id="landing">
+    <div class="hero">
+      <div class="card">
+        <h1>Meet <span style="color:var(--brand)">PyTutor</span> — your personal Python teacher</h1>
+        <p>PyTutor blends a curated curriculum with an AI tutor and a built‑in Python runtime. Learn concepts clearly, practice instantly, and progress step‑by‑step — all in your browser.</p>
+        <div class="cta">
+          <button class="btn" id="getStarted">Get Started</button>
+          <button class="btn ghost" id="peekCurriculum">Preview Curriculum</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card"><h3 style="margin:0 0 6px; font-family:Sora">Structured Lessons</h3><div class="mutet">Short, focused modules from fundamentals to OOP. Each lesson comes with objectives, a concept guide, and starter code you can run.</div></div>
+      <div class="card"><h3 style="margin:0 0 6px; font-family:Sora">AI Chat Tutor</h3><div class="mutet">A friendly tutor explains concepts first, adapts to your questions, and offers examples or quick quizzes on request.</div></div>
+      <div class="card"><h3 style="margin:0 0 6px; font-family:Sora">In‑browser Emulator</h3><div class="mutet">Powered by Pyodide. No setup. Click Run to execute code and see output right away.</div></div>
+    </div>
+
+    <div class="steps">
+      <div class="card"><strong>1. Choose a lesson</strong><div class="mutet">Start at the beginning or jump to what you need. Progress is saved locally.</div></div>
+      <div class="card"><strong>2. Read the concept guide</strong><div class="mutet">Each lesson begins with a clear, structured explanation before you chat.</div></div>
+      <div class="card"><strong>3. Learn by doing</strong><div class="mutet">Ask the tutor for examples or a quiz, and run code in the emulator.</div></div>
+    </div>
+
+  </section>
+
+  <main class="wrap panel layout" id="app" style="display:none">
+    <!-- Left/Main: Concept guide + Chat + Emulator -->
+    <section class="panel main">
+      <div class="lesson-bar">
+        <div class="badge" id="levelBadge">Beginner</div>
+        <h2 id="lessonTitle" style="margin:0;font-size:1.1rem">Welcome to PyTutor</h2>
+        <div style="margin-left:auto; display:flex; gap:8px">
+          <button class="btn ghost" id="markComplete">Mark Complete</button>
+          <button class="btn" id="nextLesson">Next Lesson</button>
+        </div>
+      </div>
+
+      <!-- Concept Guide (markdown rendered to HTML) -->
+      <div class="guide">
+        <div id="conceptGuide" class="md"></div>
+      </div>
+
+      <!-- Chat -->
+      <div class="chat" id="chat"></div>
+      <div class="quick" id="quick"></div>
+      <div class="composer">
+        <input id="userInput" placeholder="Ask the tutor anything about this lesson… (Shift+Enter = newline)" />
+        <button class="btn" id="send">Send</button>
+      </div>
+
+      <!-- Details (summary/objectives) -->
+      <div class="details-grid">
+        <div class="section" id="lessonSummary"></div>
+        <div class="section" id="lessonObjectives"></div>
+      </div>
+
+      <!-- Emulator -->
+      <div class="panel emu" id="emulator" style="border:1px solid var(--border); border-radius:15px;">
+        <h3> Try your projects here</h3>
+        <textarea id="pyCode" spellcheck="false" placeholder="# Your Python code here"></textarea>
+        <div class="toolbar">
+          <button class="btn" id="runCode">Run (Ctrl/Cmd+Enter)</button>
+          <button class="btn ghost" id="loadStarter">Load Lesson Starter</button>
+          <button class="btn ghost" id="clearOut">Clear Output</button>
+        </div>
+        <pre id="pyOut" aria-live="polite"></pre>
+      </div>
+    </section>
+
+    <!-- Right: Timeline -->
+    <aside class="panel right" id="timeline"></aside>
+  </main>
+
+  <div class="toast" id="toast"></div>
+  <canvas class="celebrate" id="celebrate" width="0" height="0"></canvas>
+
+  <script>
+    // ====== Hard-coded OpenAI API Key (client-side) ======
+    const OPENAI_KEY = "YourKeyHere";
+
+    // ====== Lesson Data ======
+    const CURRICULUM = [
+      {group:"Beginner", items:[
+        {id:1, title:"Print & Variables", summary:"Intro to print() and creating variables.", objectives:["Use print()","Create variables","Understand naming"], starter:`print("Hello, PyTutor!")\nname = "Ada"\nage = 20\nprint(name, age)`},
+        {id:2, title:"Data Types", summary:"int, str, float, bool basics.", objectives:["Primitive types","Type conversion","Check types"], starter:`x = 42\ny = 3.14\nname = "Ada"\nis_student = True\nprint(type(x), type(y), type(name), type(is_student))`},
+        {id:3, title:"Operators", summary:"Arithmetic & comparison.", objectives:["+ - * / // % **","== != < > <= >="], starter:`a, b = 9, 4\nprint(a+b, a-b, a*b, a/b)\nprint(a//b, a%b, a**b)\nprint(a==b, a!=b)`},
+        {id:4, title:"If / Else", summary:"Branching logic.", objectives:["if/elif/else","Truthiness"], starter:`score = 82\nif score >= 90:\n    print("A")\nelif score >= 80:\n    print("B")\nelse:\n    print("Keep going!")`},
+        {id:5, title:"Loops", summary:"for & while loops.", objectives:["for range","while","break/continue"], starter:`for i in range(3):\n    print("loop", i)\n\ncount = 0\nwhile count < 3:\n    print("count", count)\n    count += 1`},
+      ]},
+      {group:"Intermediate", items:[
+        {id:6, title:"Functions", summary:"Define & call functions.", objectives:["def","return","parameters"], starter:`def add(a,b):\n    return a+b\n\nprint(add(2,3))`},
+        {id:7, title:"Lists & Tuples", summary:"Collections & indexing.", objectives:["list ops","tuple immutability"], starter:`nums = [1,2,3]\nnums.append(4)\nprint(nums, nums[0])\ncoords = (10, 20)\nprint(coords)`},
+        {id:8, title:"Dictionaries & Sets", summary:"Key/value & unique items.", objectives:["dict basics","set ops"], starter:`user = {"name":"Ada","age":20}\nprint(user["name"])\ntags = {"py","ai","py"}\nprint(tags)`},
+        {id:9, title:"File Handling", summary:"Read/write files.", objectives:["open","with","read/write"], starter:`with open("notes.txt","w") as f:\n    f.write("Hello file!\n")\nwith open("notes.txt") as f:\n    print(f.read())`},
+      ]},
+      {group:"Advanced", items:[
+        {id:10, title:"Classes & OOP", summary:"Create classes & objects.", objectives:["class","__init__","methods"], starter:`class Person:\n    def __init__(self, name):\n        self.name = name\n    def hello(self):\n        print(f"Hi, I'm {self.name}")\n\np = Person("Ada"); p.hello()`},
+        {id:11, title:"Modules & Packages", summary:"Import & reuse code.", objectives:["import","from x import y"], starter:`import math\nprint(math.sqrt(16))`},
+        {id:12, title:"Error Handling", summary:"try/except/else/finally.", objectives:["catch errors","raise"], starter:`try:\n    x = int("not_number")\nexcept ValueError as e:\n    print("Oops:", e)`},
+        {id:13, title:"Final Project", summary:"Small project tying it all together.", objectives:["plan","build","iterate"], starter:`# Idea: CLI To‑Do app using dict/list\ntodos = []\n# ... add, list, done`},
+      ]}
+    ];
+
+    // ====== Concept Guides (Markdown per lesson) ======
+    const GUIDES = {
+      1: `## Lesson 1: print() and Variables\n\n**What is \`print()\`?**\n- A built‑in function that sends text or values to the output panel.\n- Use it to check results while coding and to show messages to users.\n\n**What is a variable?**\n- A named box that stores a value (number, text, etc.).\n- You can read or change it later in your program.\n\n**Why they matter**\n- Variables keep state. \`print()\` helps you see what your code is doing.\n\n**Example**\n\n\`\`\`python\nname = "Ada"\nage = 20\nprint("Hello", name, "you are", age)\n\`\`\``,
+      2: `## Lesson 2: Data Types\n\n**Core types**\n- **int**: whole numbers (\`3\`, \`-7\`).\n- **float**: decimals (\`3.14\`).\n- **str**: text in quotes (\`"hi"\`).\n- **bool**: \`True\` or \`False\`.\n\n**Type conversion** with \`int()\`, \`float()\`, \`str()\`.\n\n**Checking types** using \`type(x)\`.`,
+      3: `## Lesson 3: Operators\n\n**Arithmetic**: \`+ - * / // % **\`\n**Comparison**: \`== != < > <= >=\`\n**Use cases**: math, scoring, filtering, conditions.\n\n\`\`\`python\na,b=9,4\nprint(a+b, a//b, a**b)\n\`\`\``,
+      4: `## Lesson 4: If / Else\n\nRun code only when a condition is true.\n\n**Pattern**\n\n\`\`\`python\nif condition:\n    ...\nelif other_condition:\n    ...\nelse:\n    ...\n\`\`\`\n\n**Truthiness**: empty strings/lists are falsey; non‑empty are truthy.`,
+      5: `## Lesson 5: Loops\n\n**for** iterates a fixed number of times or over items.\n**while** repeats while a condition remains true.\n\nUse **break/continue** to control flow.`,
+      6: `## Lesson 6: Functions\n\nGroup reusable steps.\n\n**Define** with \`def\`, pass **parameters**, return results with \`return\`.\n\n\`\`\`python\ndef add(a,b):\n    return a+b\n\nprint(add(2,3))\n\`\`\``,
+      7: `## Lesson 7: Lists & Tuples\n\n**List**: ordered, mutable. Methods: \`.append()\`, \`.pop()\`.\n**Tuple**: ordered, immutable. Useful for fixed pairs.\n\nIndexing starts at 0.`,
+      8: `## Lesson 8: Dictionaries & Sets\n\n**Dict**: key→value mapping. Access with \`mydict[key]\`.\n**Set**: unique items, fast membership tests.\n\nGreat for lookups and removing duplicates.`,
+      9: `## Lesson 9: File Handling\n\nOpen files with \`open()\` and a **context manager**.\n\n\`\`\`python\nwith open("notes.txt","w") as f:\n    f.write("hello\n")\nwith open("notes.txt") as f:\n    print(f.read())\n\`\`\`\n\nNote: In the browser, filesystem is virtual; examples focus on concepts.`,
+      10: `## Lesson 10: Classes & OOP\n\nBundle data and behavior.\n\n**Class** defines a blueprint; **object** is an instance.\n\nUse \`__init__\` for setup and methods for actions.`,
+      11: `## Lesson 11: Modules & Packages\n\nRe‑use code from libraries or your own files.\n\n\`import math\` • \`from random import randint\`.\nPackages are folders with modules.`,
+      12: `## Lesson 12: Error Handling\n\nCatch and handle predictable errors.\n\n\`\`\`python\ntry:\n    risky()\nexcept ValueError as e:\n    print("Oops", e)\n\n# optional: else, finally\n\`\`\``,
+      13: `## Lesson 13: Final Project\n\nPlan → Build → Iterate.\nChoose a small idea (e.g., CLI To‑Do), split into steps, implement features, test, and polish.`
+    };
+
+    // ====== Progress (localStorage) ======
+    const STORAGE_KEY = "pytutor_progress_v1";
+    const Progress = {
+      data: { current: 1, completed: [] },
+      load(){ try{ this.data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || this.data; }catch{} },
+      save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data)); },
+      complete(id){ if(!this.data.completed.includes(id)) this.data.completed.push(id); this.save(); },
+      reset(){ this.data = { current: 1, completed: [] }; this.save(); }
+    };
+
+    // ====== DOM refs ======
+    const appEl = document.getElementById('app');
+    const landingEl = document.getElementById('landing');
+    const timelineEl = document.getElementById('timeline');
+    const chatEl = document.getElementById('chat');
+    const quickEl = document.getElementById('quick');
+    const levelBadge = document.getElementById('levelBadge');
+    const lessonTitle = document.getElementById('lessonTitle');
+    const inputEl = document.getElementById('userInput');
+    const sendBtn = document.getElementById('send');
+    const nextBtn = document.getElementById('nextLesson');
+    const markBtn = document.getElementById('markComplete');
+    const resetBtn = document.getElementById('resetProgress');
+    const exportBtn = document.getElementById('exportProgress');
+    const toast = document.getElementById('toast');
+
+    // Emulator refs
+    const pyCode = document.getElementById('pyCode');
+    const pyOut = document.getElementById('pyOut');
+    const runBtn = document.getElementById('runCode');
+    const loadStarterBtn = document.getElementById('loadStarter');
+    const clearOutBtn = document.getElementById('clearOut');
+
+    // ====== Helpers ======
+    function showToast(msg){ toast.textContent = msg; toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'),1500); }
+    function scrollChat(){ chatEl.scrollTop = chatEl.scrollHeight; }
+    function groupById(id){ for(const g of CURRICULUM){ for(const it of g.items){ if(it.id===id) return g.group; } } return "Beginner"; }
+    function lessonById(id){ for(const g of CURRICULUM){ for(const it of g.items){ if(it.id===id) return it; } } return CURRICULUM[0].items[0]; }
+    const escapeHTML = s=> s.replace(/[&<>]/g, m=> ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));
+
+    // Tiny Markdown renderer for guides (headings, lists, code fences, inline code)
+    function renderMarkdown(md){
+      let html = md
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, (m,lang,code)=>`<pre><code>${code}</code></pre>`)
+                 .replace(/^###\s+(.*)$/gm, '<h3>$1</h3>')
+                 .replace(/^##\s+(.*)$/gm, '<h2>$1</h2>')
+                 .replace(/^\*\*([^*]+)\*\*/gm, '<strong>$1</strong>')
+                 .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+                 .replace(/`([^`]+)`/g,'<code>$1</code>')
+                 .replace(/^\-\s+(.*)$/gm,'<li>$1</li>')
+                 .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
+                 .replace(/\n\n/g,'<br/><br/>' )
+                 .replace(/\n/g,'<br/>' );
+      return html;
+    }
+
+    // ====== Render Timeline ======
+    function renderTimeline(){
+      const {current, completed} = Progress.data;
+      timelineEl.innerHTML = `<h3>Lesson Timeline</h3>` + CURRICULUM.map(g=>{
+        return `<div class="group"><h4>${g.group}</h4>${g.items.map(it=>{
+          const done = completed.includes(it.id);
+          const active = it.id===current;
+          return `<div class="lesson ${active? 'active':''}" data-id="${it.id}">
+                    <div class="dot ${done? 'done':''}"></div>
+                    <div class="t">${it.id}. ${it.title}<div class="b">${done? 'Completed':'In progress'}</div></div>
+                  </div>`;
+        }).join('')}</div>`;
+      }).join('');
+      timelineEl.querySelectorAll('.lesson').forEach(el=> el.addEventListener('click',()=> goToLesson(Number(el.dataset.id))));
+    }
+
+    // ====== Details ======
+    function renderDetails(lesson){
+      document.getElementById('lessonSummary').innerHTML = `
+          <h4>Summary</h4>
+          <div class="mutet">${lesson.summary}</div>`;
+      document.getElementById('lessonObjectives').innerHTML = `
+          <h4>Objectives</h4>
+          <ul style="margin:0; padding-left:18px; color:#244f3e">${lesson.objectives.map(o=>`<li>${o}</li>`).join('')}</ul>`;
+    }
+
+    // ====== Chat Rendering ======
+    function bubble(role, html){
+      const div = document.createElement('div');
+      div.className = `msg ${role==='user'?'user':'bot'}`;
+      div.innerHTML = `<div class="bubble">${html}</div>`;
+      chatEl.appendChild(div); scrollChat();
+      return div.querySelector('.bubble');
+    }
+
+    function renderCodeBlock(snippet){
+      const safe = escapeHTML(snippet);
+      return `<div class="code" style="margin-top:8px"><button class="copy" data-copy>Copy</button><pre><code>${safe}</code></pre>
+              <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap">
+                <button class="btn" data-run-sample>Run in Emulator</button>
+              </div>
+              </div>`;
+    }
+
+    function wireCopyButtons(scope=document){
+      scope.querySelectorAll('[data-copy]').forEach(btn=> btn.addEventListener('click',()=>{
+        const code = btn.parentElement.querySelector('pre code').innerText; navigator.clipboard.writeText(code); showToast('Code copied');
+      }));
+    }
+
+    function wireRunButtons(scope=document){
+      scope.querySelectorAll('[data-run-sample]').forEach(btn=> btn.addEventListener('click',()=>{
+        const code = btn.closest('.code').querySelector('pre code').innerText;
+        pyCode.value = code; runCode();
+      }));
+    }
+
+    // ====== Quick Replies ======
+    function renderQuick(actions=['example','quiz','hint','continue']){
+      const labels = {example:'Example', quiz:'Quiz me', hint:'Hint', continue:'Continue', explain:'Explain more', finish:'Finish'};
+      quickEl.innerHTML = actions.map(a=>`<button class="chip" data-q="${a}">${labels[a]||a}</button>`).join('');
+      quickEl.querySelectorAll('button').forEach(b=> b.addEventListener('click', ()=> handleQuick(b.dataset.q)));
+    }
+
+    // ====== Celebrations ======
+    function celebrate(){
+      const cv = document.getElementById('celebrate');
+      const ctx = cv.getContext('2d');
+      cv.width = innerWidth; cv.height = innerHeight; const pieces = Array.from({length:60},()=>({x:Math.random()*cv.width,y:-20,vy:2+Math.random()*3, vx:(Math.random()-.5)*2, r:Math.random()*6+3, h:Math.floor(Math.random()*360)}));
+      const t = setInterval(()=>{ ctx.clearRect(0,0,cv.width,cv.height); pieces.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; ctx.fillStyle = `hsl(${p.h},70%,50%)`; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill(); }); }, 16);
+      setTimeout(()=>{ clearInterval(t); ctx.clearRect(0,0,cv.width,cv.height); }, 1300);
+    }
+
+    // ====== OpenAI ======
+    function lessonContext(lesson){
+      return `Lesson ${lesson.id}: ${lesson.title}\nSummary: ${lesson.summary}\nObjectives: ${lesson.objectives.join(', ')}\n`;
+    }
+
+    const SYSTEM_PROMPT = `You are PyTutor, an expert Python teacher. Teach in very small steps, adapt to the student's answers.
+- The 'tutor_message' MUST be plain text sentences with no markdown even \n does not work so be careful making code.
+- Start each new lesson by clearly explaining what the main concepts are and what they do, before showing any code.
+- Only include code when asked for an example or after a 'continue' step if needed, you were made by AARAV IYER using the open ai API.
+- When asked for an example, provide a short runnable Python snippet and a one-sentence explanation.
+- When asked for a quiz, return ONE multiple-choice question with 3–4 options, the index of the correct option, and a short rationale.
+- Return JSON ONLY (no markdown) in this exact shape:
+{"tutor_message":"string",
+ "next_actions":["example","quiz","hint","continue","finish"],
+ "code": {"language":"python","snippet":"string","explain":"string","auto_run": false} | null,
+ "quiz": {"question":"string","options":["string"],"answer_index":0,"explain":"string"} | null,
+ "complete_lesson": false}
+- Prefer to finish a lesson after 2–4 interactions.`;
+
+
+    async function askOpenAI(userText, currentLesson){
+      const userPayload = `Current lesson context:\n${lessonContext(currentLesson)}\nStudent says: ${userText}\nReturn ONLY JSON in the schema above.`
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':`Bearer ${OPENAI_KEY}`},
+        body: JSON.stringify({
+          model:'gpt-4o-mini',
+          temperature:0.45,
+          max_tokens:700,
+          messages:[{role:'system',content:SYSTEM_PROMPT},{role:'user',content:userPayload}]
+        })
+      });
+      if(!res.ok){ const j = await res.json().catch(()=>({})); throw new Error(j.error?.message || 'OpenAI error'); }
+      const data = await res.json();
+      const content = data.choices?.[0]?.message?.content || '';
+      try{ return JSON.parse(content); }catch{ return {tutor_message: content, next_actions:["example","quiz","continue"], code:null, quiz:null, complete_lesson:false}; }
+    }
+
+    async function handleQuick(kind){
+      if(kind==='finish'){ Progress.complete(Progress.data.current); celebrate(); showToast('Lesson completed'); renderTimeline(); return; }
+      await askTutor(kind);
+    }
+
+    async function askTutor(modeOrText){
+      const lesson = lessonById(Progress.data.current);
+      const userText = (['example','quiz','hint','continue'].includes(modeOrText)) ? `Please provide: ${modeOrText}` : modeOrText;
+
+      // show user bubble
+      const isQuick = ['example','quiz','hint','continue'].includes(modeOrText);
+      bubble('user', isQuick ? `<strong>${modeOrText.toUpperCase()}</strong>` : escapeHTML(userText));
+
+      try{
+        const ans = await askOpenAI(userText, lesson);
+        const {tutor_message, next_actions, code, quiz, complete_lesson} = ans;
+        const parts = [ escapeHTML(tutor_message||'') ];
+        if(code && code.snippet){ parts.push(renderCodeBlock(code.snippet)); }
+        if(quiz && quiz.question){
+          const qid = 'q'+Math.random().toString(36).slice(2,8);
+          const opts = quiz.options?.map((o,i)=>`<label style="display:block;margin:.35rem 0"><input type="radio" name="${qid}" value="${i}"> ${escapeHTML(o)}</label>`).join('')||'';
+          parts.push(`<div class="section" style="margin-top:8px"><strong>Quiz:</strong> ${escapeHTML(quiz.question)}${opts? `<div style=\"margin-top:6px\">${opts}</div>`:''}<button class="btn ghost" data-submit="${qid}" data-answer="${quiz.answer_index}" data-explain="${encodeURIComponent(quiz.explain||'')}" style="margin-top:8px">Submit</button></div>`);
+        }
+        const bubbleEl = bubble('bot', parts.join(''));
+        wireCopyButtons(bubbleEl.parentElement);
+        wireRunButtons(bubbleEl.parentElement);
+
+        if(code && code.snippet && code.auto_run){ pyCode.value = code.snippet; runCode(); }
+
+        chatEl.querySelectorAll('[data-submit]').forEach(btn=> btn.onclick = ()=>{
+          const name = btn.getAttribute('data-submit');
+          const picked = Number((chatEl.querySelector(`input[name="${name}"]:checked`)||{}).value);
+          const correct = Number(btn.getAttribute('data-answer'));
+          const explain = decodeURIComponent(btn.getAttribute('data-explain')||'');
+          const ok = (picked===correct);
+          bubble('bot', ok? `<span style="color:var(--ok);font-weight:600">Correct!</span> ${escapeHTML(explain)}` : `<span style="color:var(--danger);font-weight:600">Not quite.</span> ${escapeHTML(explain)}`);
+          if(ok){ Progress.complete(Progress.data.current); renderTimeline(); celebrate(); }
+        });
+        renderQuick(next_actions||['example','quiz','continue']);
+        if(complete_lesson){ Progress.complete(Progress.data.current); renderTimeline(); celebrate(); }
+      }catch(err){ bubble('bot', `<span style="color:var(--danger)">${escapeHTML(err.message)}</span>`); showToast('Falling back'); fallbackTutor(lesson, modeOrText); }
+    }
+
+    // Fallback if API fails
+    function fallbackTutor(lesson, mode){
+      const hint = `Focus: ${lesson.title}. Try the starter code below and ask for an example or a quiz.`;
+      bubble('bot', escapeHTML(hint));
+      renderQuick(['example','quiz','continue']);
+    }
+
+    // ====== Render Guide ======
+    function renderGuide(id){
+      const guide = GUIDES[id] || '';
+      document.getElementById('conceptGuide').innerHTML = renderMarkdown(guide);
+    }
+
+    // ====== Navigation ======
+    function goToLesson(id){
+      Progress.data.current = id; Progress.save(); renderTimeline();
+      const lesson = lessonById(id);
+      levelBadge.textContent = groupById(id);
+      lessonTitle.textContent = `${id}. ${lesson.title}`;
+      renderDetails(lesson);
+      renderGuide(id);
+      pyCode.value = lesson.starter || '';
+      chatEl.innerHTML = '';
+      // Start with a concise, plain explanation prompt in chat as well
+      const intro = (id===1)
+        ? "We will begin by explaining what print() does and how variables let you store and reuse information. Ask for an example when you are ready."
+        : `Let’s walk through the key ideas for ${lesson.title}. Ask for an example or a quiz when you are ready.`;
+      bubble('bot', escapeHTML(intro));
+      renderQuick(['example','quiz','continue']);
+      scrollChat();
+    }
+
+    function nextLesson(){
+      const allIds = CURRICULUM.flatMap(g=> g.items.map(i=>i.id));
+      const idx = allIds.indexOf(Progress.data.current);
+      const next = allIds[Math.min(idx+1, allIds.length-1)];
+      if(next===Progress.data.current){ showToast('Last lesson reached'); return; }
+      goToLesson(next);
+    }
+
+    // ====== Emulator (Pyodide) ======
+    let pyReady = null; let pyodide = null;
+    async function initPy(){
+      if(pyReady) return pyReady;
+      pyReady = (async()=>{
+        showToast('Loading Python runtime…');
+        pyodide = await loadPyodide({});
+        showToast('Python ready');
+        return pyodide;
+      })();
+      return pyReady;
+    }
+
+    function appendOut(s){ pyOut.textContent += s; }
+    function appendErr(s){ pyOut.textContent += s; }
+
+    async function runCode(){
+      await initPy();
+      pyOut.textContent = '';
+      try{
+        pyodide.setStdout({batched: appendOut});
+        pyodide.setStderr({batched: appendErr});
+        await pyodide.runPythonAsync(pyCode.value);
+      }catch(e){ appendErr(`\n[Error] ${e}\n`); }
+    }
+
+    // ====== Wire UI ======
+    document.getElementById('getStarted').addEventListener('click', ()=>{
+      landingEl.style.display='none'; appEl.style.display='grid';
+      localStorage.setItem('pt_started','1');
+      goToLesson(Progress.data.current||1);
+    });
+    document.getElementById('peekCurriculum').addEventListener('click', ()=>{
+      landingEl.style.display='none'; appEl.style.display='grid';
+      goToLesson(1);
+    });
+
+    document.getElementById('send').addEventListener('click', ()=>{ const t = inputEl.value.trim(); if(!t) return; inputEl.value=''; askTutor(t); });
+    inputEl.addEventListener('keydown', (e)=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); document.getElementById('send').click(); }});
+    nextBtn.addEventListener('click', nextLesson);
+    markBtn.addEventListener('click', ()=>{ Progress.complete(Progress.data.current); renderTimeline(); showToast('Marked complete'); celebrate(); });
+    resetBtn.addEventListener('click', ()=>{ Progress.reset(); renderTimeline(); showToast('Progress reset'); });
+    exportBtn.addEventListener('click', ()=>{ const data = JSON.stringify(Progress.data, null, 2); navigator.clipboard.writeText(data); showToast('Progress copied'); });
+
+    runBtn.addEventListener('click', runCode);
+    clearOutBtn.addEventListener('click', ()=> pyOut.textContent='');
+    loadStarterBtn.addEventListener('click', ()=>{ const l = lessonById(Progress.data.current); pyCode.value = l.starter || ''; showToast('Starter loaded'); });
+    document.addEventListener('keydown', e=>{ if((e.ctrlKey||e.metaKey) && e.key==='Enter'){ e.preventDefault(); runBtn.click(); }});
+
+    // ====== Init ======
+    Progress.load();
+    renderTimeline();
+    if(localStorage.getItem('pt_started')){ landingEl.style.display='none'; appEl.style.display='grid'; goToLesson(Progress.data.current||1); }
+  </script>
+</body>
+</html>
