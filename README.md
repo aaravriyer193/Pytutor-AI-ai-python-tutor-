@@ -159,6 +159,3 @@ In essence, PyTutor works by combining:
 
 Together, these elements create a lightweight, approachable platform for learning programming concepts interactively.
 
----
-
-Would you like me to also make a **diagram (flowchart)** to visually show this step-by-step process for your GitHub page? That could go into `HOW_IT_WORKS.md` as well.
